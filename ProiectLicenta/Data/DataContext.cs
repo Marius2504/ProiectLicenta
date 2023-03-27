@@ -9,14 +9,14 @@ namespace ProiectLicenta.Data
         {
          
         }
-        DbSet<Album> Albums { get; set; }
-        DbSet<Artist> Artists { get; set;}
-        DbSet<Client> Clients { get; set; }
-        DbSet<Event> Events { get; set; }
-        DbSet<Genre> Genres { get; set; }
-        DbSet<Location> Locations { get;set; }
-        DbSet<Playlist> Playlists { get; set; }
-        DbSet<Song> Songs { get; set; }
-        DbSet<Ticket> Ticket { get; set; }
+        public DbSet<Album> Albums { get; set; }
+        public DbSet<Artist> Artists { get; set;}
+        public DbSet<Client> Clients { get; set; }
+        public DbSet<Event> Events { get; set; }
+        public DbSet<Genre> Genres { get; set; }
+        public DbSet<Location> Locations { get;set; }
+        public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<Song> Songs { get; set; }
+        public DbSet<Ticket> Ticket { get; set; }
     }
 }

@@ -4,30 +4,44 @@ using ProiectLicenta.Repositories.Interfaces;
 
 namespace ProiectLicenta.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public abstract class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        private readonly DataContext _context;
+        protected readonly DataContext _context;
 
         public GenericRepository(DataContext context)
         {
             this._context = context;
         } 
-        public T Add(T entity)
+        public async Task<T> Add(T entity)
         {
-           _context.Set<T>().Add(entity);
+           await _context.Set<T>().AddAsync(entity);
            Save();
            return entity;
         }
-   
-        public List<T> GetAll()
+        public async Task<T?> Get(int id)
         {
-            return _context.Set<T>().ToList();
+            return await _context.Set<T>().FindAsync(id);
         }
-        public T Update(T entity)
+   
+        public async Task<List<T>> GetAll()
+        {
+            return await _context.Set<T>().ToListAsync();
+        }
+        public async Task<T?> Update(T entity)
         {
             _context.Entry(entity).State =EntityState.Modified;
             Save();
             return entity;
+        }
+        public async Task<T?> Delete(int id)
+        {
+            var obj =await _context.Set<T>().FindAsync(id);
+            if(obj != null)
+            {
+                _context.Set<T>().Remove(obj);
+            }
+            Save();
+            return obj;
         }
         public async void Save()
         {
