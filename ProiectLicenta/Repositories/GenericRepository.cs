@@ -4,7 +4,7 @@ using ProiectLicenta.Repositories.Interfaces;
 
 namespace ProiectLicenta.Repositories
 {
-    public abstract class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         protected readonly DataContext _context;
 
@@ -43,7 +43,7 @@ namespace ProiectLicenta.Repositories
             Save();
             return obj;
         }
-        public async void Save()
+        public async Task Save()
         {
             await _context.SaveChangesAsync();
         }
