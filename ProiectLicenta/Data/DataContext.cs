@@ -13,13 +13,6 @@ namespace ProiectLicenta.Data
         {
             base.OnModelCreating(builder);
         }
-
-            base.OnModelCreating(builder);
-        }
-
-            base.OnModelCreating(builder);
-        }
-
         public DbSet<Album> Albums { get; set; }
         public DbSet<Artist> Artists { get; set;}
         public DbSet<Client> Clients { get; set; }
