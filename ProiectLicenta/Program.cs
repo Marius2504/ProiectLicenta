@@ -15,6 +15,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<EventRepository>();
 builder.Services.AddScoped<ArtistRepository>();
 builder.Services.AddScoped<ClientRepository>();
+builder.Services.AddScoped<AlbumRepository>();
+builder.Services.AddScoped<LocationRepository>();
+builder.Services.AddScoped<PlaylistRepository>();
+builder.Services.AddScoped<SongRepository>();
+builder.Services.AddScoped<TicketRepository>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<SeedDatabase>();
 
