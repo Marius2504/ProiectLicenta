@@ -1,14 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ProiectLicenta.Entities;
 
 namespace ProiectLicenta.Data
 {
-    public class DataContext:DbContext
+    public class DataContext: IdentityDbContext<ApplicationUser>
     {
-        public DataContext(DbContextOptions<DataContext> options):base(options)
+        public DataContext(DbContextOptions<DataContext> options) : base(options) { }
+       
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-         
+            base.OnModelCreating(builder);
         }
+
+            base.OnModelCreating(builder);
+        }
+
+            base.OnModelCreating(builder);
+        }
+
         public DbSet<Album> Albums { get; set; }
         public DbSet<Artist> Artists { get; set;}
         public DbSet<Client> Clients { get; set; }

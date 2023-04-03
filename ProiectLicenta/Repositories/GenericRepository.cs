@@ -15,7 +15,7 @@ namespace ProiectLicenta.Repositories
         public async Task<T> Add(T entity)
         {
            await _context.Set<T>().AddAsync(entity);
-           Save();
+           await Save();
            return entity;
         }
         public async Task<T?> Get(int id)
@@ -30,17 +30,17 @@ namespace ProiectLicenta.Repositories
         public async Task<T?> Update(T entity)
         {
             _context.Entry(entity).State =EntityState.Modified;
-            Save();
+            await Save();
             return entity;
         }
-        public async Task<T?> Delete(int id)
+        public virtual async Task<T?> Delete(int id)
         {
             var obj =await _context.Set<T>().FindAsync(id);
             if(obj != null)
             {
                 _context.Set<T>().Remove(obj);
             }
-            Save();
+            await Save();
             return obj;
         }
         public async Task Save()
