@@ -50,7 +50,7 @@ namespace ProiectLicenta.Controllers
         }
         
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public virtual async Task<IActionResult> Delete(int id)
         {
             var obj = GetById(id);
             await _genericRepository.Delete(id);

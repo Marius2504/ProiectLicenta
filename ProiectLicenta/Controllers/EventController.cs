@@ -13,7 +13,7 @@ namespace ProiectLicenta.Controllers
     {
         private readonly EventRepository _eventRepository;
 
-        public EventController(EventRepository eventRepository,IGenericRepository<EventCreateDTO> genericRepository) : base(eventRepository)
+        public EventController(EventRepository eventRepository) : base(eventRepository)
         {
             this._eventRepository = eventRepository;
         }
