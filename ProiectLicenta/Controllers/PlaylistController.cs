@@ -12,45 +12,44 @@ namespace ProiectLicenta.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventController : GenericController<EventCreateDTO,Event>
+    public class PlaylistController : GenericController<PlaylistCreateDTO, Playlist>
     {
-        private readonly EventRepository _eventRepository;
+        private readonly PlaylistRepository _repository;
         protected MapperConfiguration configuration;
         Mapper mapper;
-        public EventController(EventRepository eventRepository) : base(eventRepository)
+        public PlaylistController(PlaylistRepository repository) : base(repository)
         {
-            this._eventRepository = eventRepository;
+            this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<EventCreateDTO, Event>();
+                cfg.CreateMap<PlaylistCreateDTO, Playlist>();
             });
             mapper = new Mapper(configuration);
         }
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public virtual async Task<IActionResult> Create(EventCreateDTO obj)
+        [Authorize()]
+        public virtual async Task<IActionResult> Create(PlaylistCreateDTO obj)
         {
-            var result = mapper.Map<Event>(obj);
-            await _eventRepository.Add(result);
+            var result = mapper.Map<Playlist>(obj);
+            await _repository.Add(result);
             return Ok(obj);
         }
         [HttpPut("update")]
-        [Authorize(Roles = "Admin")]
-        public virtual async Task<IActionResult> Update(EventCreateDTO obj)
+        [Authorize()]
+        public virtual async Task<IActionResult> Update(PlaylistCreateDTO obj)
         {
-            var result = mapper.Map<Event>(obj);
-            await _eventRepository.Update(result);
+            var result = mapper.Map<Playlist>(obj);
+            await _repository.Update(result);
             return Ok(obj);
         }
 
         [HttpDelete("delete/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize()]
         public virtual async Task<IActionResult> Delete(int id)
         {
             var obj = GetById(id);
-            await _eventRepository.Delete(id);
+            await _repository.Delete(id);
             return Ok(obj);
         }
-
     }
 }

@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ProiectLicenta.Data;
 using ProiectLicenta.DTOs.Create;
+using ProiectLicenta.Email;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories;
 using ProiectLicenta.Repositories.Interfaces;
 using ProiectLicenta.Seed;
+using ProiectLicenta.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,8 @@ builder.Services.AddScoped<SongRepository>();
 builder.Services.AddScoped<TicketRepository>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<SeedDatabase>();
+builder.Services.AddScoped<IEmailSender,EmailSender>();
+builder.Services.AddScoped<IUserService,UserService>();
 
 //Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()

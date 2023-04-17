@@ -25,7 +25,8 @@ namespace ProiectLicenta.Seed
             string[] roles =
             {
                 "Artist",
-                "Client"
+                "Client",
+                "Admin"
             };
 
             foreach (var role in roles)

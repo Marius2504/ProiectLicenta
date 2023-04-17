@@ -1,15 +1,20 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProiectLicenta.Data;
+using ProiectLicenta.DTOs;
 using ProiectLicenta.DTOs.Create;
+using ProiectLicenta.Email;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Entities.Login;
 using ProiectLicenta.Entities.Register;
 using ProiectLicenta.Repositories;
 using ProiectLicenta.Repositories.Interfaces;
+using ProiectLicenta.Services;
+using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Text.Unicode;
 
@@ -19,59 +24,38 @@ namespace ProiectLicenta.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+        private readonly IUserService _userService;
+        private readonly IEmailSender _email;
         private readonly ArtistRepository _artistRepository;
         private readonly ClientRepository _clientRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> roleManager;
         private readonly DataContext _dataContext;
        
-        public UserController(ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
+        public UserController(IUserService userService,IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
         {
+            this._userService = userService;
+            this._email = email;
             this._artistRepository = artistRepository;
             this._clientRepository = clientRepository;
             this._userManager = userManager;
             this._signInManager = signInManager;
+            this.roleManager = roleManager;
             this._dataContext = dataContext;
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterUser user)
         {
-            ApplicationUser currentUser = new ApplicationUser();
-            currentUser.Email = user.Email;
-            currentUser.UserName = user.UserName;
-            currentUser.Name = user.UserName;
-            var result = await _userManager.CreateAsync(currentUser, user.Password);
-            await _dataContext.SaveChangesAsync();
-
-
-            if (result.Succeeded)
+            var currentUser = await _userService.Create(user);
+            if (currentUser !=null)
             {
-                currentUser = await _userManager.FindByIdAsync(currentUser.Id);
-                if (user.isArtist == true)
-                {
-                    await _userManager.AddToRoleAsync(currentUser, "Artist");
+                //Confirmation e-mail
+                var code = await _userService.GetConfirmationEmail(currentUser.Id);
+                var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
+                await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
 
-                    Artist artist = new Artist();
-                    artist.Name = user.UserName;
-                    artist.ApplicationUserId = currentUser.Id;
-                    artist.Description = "";
-                    await _artistRepository.Add(artist);
-
-                }
-                else
-                {
-                    await _userManager.AddToRoleAsync(currentUser, "Client");
-                    Client client = new Client();
-                    client.Name = user.UserName;
-                    client.ApplicationUserId = currentUser.Id;
-                    client.Age = 0;
-                    client.Email = "";
-                    await _clientRepository.Add(client);
-                }
-
-                await _signInManager.SignInAsync(currentUser, isPersistent: false);
-
-                return Ok();
+                return Ok("You need to confirm e-mail");
             }
             return BadRequest();
         }
@@ -79,15 +63,15 @@ namespace ProiectLicenta.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginUser user)
         {
-            ApplicationUser currentUser = await _userManager.FindByEmailAsync(user.Email);
-            if (currentUser != null)
+            var result = await _userService.UserExists(user.Email);
+            if (result)
             {
-                var result = await _signInManager.PasswordSignInAsync(currentUser, user.Password, isPersistent: false, lockoutOnFailure: true);
-                if (result.Succeeded)
+                var resultLogin =await _userService.Login(user.Email,user.Password);
+                if (resultLogin)
                 {
                     return Ok();
                 }
-                if (result.IsLockedOut)
+                else
                 {
                     return BadRequest("You have been locked out");
                 }
@@ -95,44 +79,42 @@ namespace ProiectLicenta.Controllers
             }
             return BadRequest("Invalid username or password");
         }
+        
         [HttpPost("Logout")]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await _userService.Logout();
             return Ok();
         }
 
         [HttpDelete("delete/{email}")]
+        [Authorize("Admin")]
         public async Task<IActionResult> Delete(string email)
         {
-            ApplicationUser user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            var result = await _userService.UserExists(email);
+            if (result)
             {
-                if (await _userManager.IsInRoleAsync(user, "Artist"))
+                var resultDelete = await _userService.DeleteUser(email);
+                if (resultDelete == false)
                 {
-                    var artist = user.Artist;
-                    await _artistRepository.Delete(artist.Id);
+                    return BadRequest("The user haven't been deleted");
                 }
-                else
-                {
-                    var client = user.Client;
-                    await _clientRepository.Delete(client.Id);
-                }
-                await _userManager.DeleteAsync(user);
                 return Ok();
             }
             return BadRequest("The user no longer exists");
         }
-        [HttpGet]
+        [HttpGet("all")]
+        [Authorize("Admin")]
         public async Task<IActionResult> GetAll()
         {
-            var list = await _userManager.Users.ToListAsync();
+            var list = await _userService.GetAll();
             return Ok(list);
         }
         [HttpGet("{id}")]
+        [Authorize("Admin")]
         public async Task<IActionResult> GetById(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await _userService.GetById(id);
             if (user != null)
             {
                 return Ok(user);
@@ -140,46 +122,67 @@ namespace ProiectLicenta.Controllers
             return BadRequest("User no longer exists");
         }
         [HttpPut]
-        public async Task<IActionResult> Update(ApplicationUser user)
+        [Authorize("Client,Admin")]
+        public async Task<IActionResult> Update(ApplicationUserDTO user)
         {
             if (user != null)
             {
-                var currentUser = await _userManager.FindByIdAsync(user.Id);
-                if (currentUser != null)
+                var currentUser = await _userService.Update(user);
+                if(currentUser.Equals(user))
                 {
-                    // await _userManager.UpdateAsync(user);
-                    _dataContext.Entry(user).State = EntityState.Modified;
-                    _dataContext.SaveChanges();
-                    return Ok();
+                    return Ok(currentUser);
                 }
-                return BadRequest("User doesn't exist");
+                return BadRequest("Error while updating");
             }
             return BadRequest("Null user");
         }
         [HttpGet("roles")]
+        [Authorize("Admin")]
         public async Task<IActionResult> GetUserWithRoles(string id)
         {
-            var user =await _userManager.FindByIdAsync(id);
+            var user = await _userService.GetById(id);
             if (user != null)
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var roles = await _userService.GetRoles(id); 
                 return Ok(new { user, roles });
             }
             return BadRequest("User doesn't exist");
         }
-        [HttpPut("password")]
-        public async Task<IActionResult> LostPassword(string email, string password)
+        [HttpGet]
+        public async Task<IActionResult> VerifyEmail(string id, string code)
         {
-            var user =await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            var user = await _userService.GetById(id);
+            if (user == null)
             {
-                PasswordHasher<ApplicationUser> passwordHasher = new PasswordHasher<ApplicationUser>();
-                user.PasswordHash = passwordHasher.HashPassword(user, password);
-                _dataContext.Entry(user).State= EntityState.Modified;
-                _dataContext.SaveChanges();
+                return BadRequest();
+            }
+            var result = await _userService.GetConfirmationEmail(id, code);
+            if (result)
+            {
                 return Ok();
             }
-            return BadRequest("User doesn't exist");
+            return BadRequest();
+        }
+        [HttpPost("resetPassword/{id}")]
+        public async Task<IActionResult> LostPassword(string id)
+        {
+            var currentUser = await _userService.GetById(id);
+            var code = await _userService.GeneratePasswordToken(id);
+            var link = Url.Action("ResetPassword", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
+            await _email.Send(currentUser.Email, "Reset password", $"<a href=\"{link}\">Reset password</a>");
+            return Ok("Email sent");
+        }
+        [HttpGet("reset")]
+        public async Task<IActionResult> ResetPassword(string id, string code)
+        {
+            var user = await _userService.GetById(id);
+            if (user == null) return BadRequest();
+            var result = await _userService.VerifyToken(id, code);
+            if (result)
+            {
+                return Ok();
+            }
+            return BadRequest();
         }
     }
 }

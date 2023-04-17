@@ -1,15 +1,33 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting.Internal;
+using ProiectLicenta.DTOs.Create;
+using ProiectLicenta.Entities;
+using ProiectLicenta.Repositories;
 using System.IO;
 
 namespace ProiectLicenta.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SongController : ControllerBase
+    public class SongController : GenericController<SongCreateDTO,Song>
     {
-        [HttpPost]
+        protected MapperConfiguration configuration;
+        Mapper mapper;
+        private readonly SongRepository _repository;
+
+        public SongController(SongRepository repository):base(repository)
+        {
+            this._repository = repository;
+            configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<SongCreateDTO, Song>();
+            });
+            mapper = new Mapper(configuration);
+        }
+        [HttpPost("upload")]
         public async Task<IActionResult> UploadAudioFile(IFormFile file)
         {
             /* 
@@ -33,13 +51,38 @@ namespace ProiectLicenta.Controllers
             }
             return Ok("File uploaded successfully");
         }
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllSongs()
         {
             var filePath = @"e:\VS_Projects";
             var source = "data:audio/wav;base64," + Convert
                 .ToBase64String(System.IO.File.ReadAllBytes(Path.Combine(filePath, "file")));
             return Ok(source);
+        }
+        [HttpPost]
+        [Authorize("Artist,Admin")]
+        public virtual async Task<IActionResult> Create(SongCreateDTO obj)
+        {
+            var result = mapper.Map<Song>(obj);
+            await _repository.Add(result);
+            return Ok(obj);
+        }
+        [HttpPut("update")]
+        [Authorize("Artist,Admin")]
+        public virtual async Task<IActionResult> Update(SongCreateDTO obj)
+        {
+            var result = mapper.Map<Song>(obj);
+            await _repository.Update(result);
+            return Ok(obj);
+        }
+
+        [HttpDelete("delete/{id}")]
+        [Authorize("Artist,Admin")]
+        public virtual async Task<IActionResult> Delete(int id)
+        {
+            var obj = GetById(id);
+            await _repository.Delete(id);
+            return Ok(obj);
         }
     }
 }
