@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProiectLicenta.Data;
+using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs;
 using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Email;
@@ -14,8 +16,11 @@ using ProiectLicenta.Entities.Register;
 using ProiectLicenta.Repositories;
 using ProiectLicenta.Repositories.Interfaces;
 using ProiectLicenta.Services;
+using System.IdentityModel.Tokens.Jwt;
 using System.Reflection.Metadata;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Unicode;
 
 namespace ProiectLicenta.Controllers
@@ -30,10 +35,13 @@ namespace ProiectLicenta.Controllers
         private readonly ClientRepository _clientRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> roleManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly DataContext _dataContext;
-       
-        public UserController(IUserService userService,IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
+        private readonly IConfiguration _configuration;
+
+        public UserController(IUserService userService, IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository,
+            UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager,
+            DataContext dataContext, IConfiguration configuration)
         {
             this._userService = userService;
             this._email = email;
@@ -41,45 +49,93 @@ namespace ProiectLicenta.Controllers
             this._clientRepository = clientRepository;
             this._userManager = userManager;
             this._signInManager = signInManager;
-            this.roleManager = roleManager;
+            this._roleManager = roleManager;
             this._dataContext = dataContext;
+            this._configuration = configuration;
+        }
+
+        private JwtSecurityToken GetToken(List<Claim> authClaims)
+        {
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWT:ValidIssuer"],
+                audience: _configuration["JWT:ValidAudience"],
+                expires: DateTime.Now.AddHours(3),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+
+            return token;
+        }
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(LoginUser user)
+        {
+            var currentUser = await _userManager.FindByEmailAsync(user.Email);
+            if (currentUser != null && await _userManager.CheckPasswordAsync(currentUser, user.Password))
+            {
+                var roles = await _userManager.GetRolesAsync(currentUser);
+                var authClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                };
+                foreach (var role in roles)
+                {
+                    authClaims.Add(new Claim(ClaimTypes.Role, role));
+                }
+
+                var token = GetToken(authClaims);
+
+                return Ok(new
+                {
+                    token = new JwtSecurityTokenHandler().WriteToken(token),
+                    expiration = token.ValidTo
+                });
+
+            }
+            return Unauthorized();
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterUser user)
         {
-            var currentUser = await _userService.Create(user);
-            if (currentUser !=null)
-            {
-                //Confirmation e-mail
-                var code = await _userService.GetConfirmationEmail(currentUser.Id);
-                var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
-                await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
+            var userExists = await _userManager.FindByNameAsync(user.UserName);
+            var userExistsByEmail = await _userManager.FindByEmailAsync(user.Email);
+            if (userExists != null || userExistsByEmail!=null)
+                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User already exists!" });
 
-                return Ok("You need to confirm e-mail");
+            ApplicationUser currentUser = new()
+            {
+                Email = user.Email,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Name = user.UserName,
+                UserName = user.UserName,
+            };
+            var result = await _userManager.CreateAsync(currentUser, user.Password);
+
+            if (!result.Succeeded) 
+                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
+            
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Client))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Client));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Artist))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Artist));
+
+            if (user.isArtist)
+            {
+                if (await _roleManager.RoleExistsAsync(UserRoles.Artist))
+                {
+                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Artist);
+                }
             }
-            return BadRequest();
+            //var code = await _userService.GetConfirmationEmail(currentUser.Id);
+            //var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
+            //await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
+            return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
 
-        [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginUser user)
-        {
-            var result = await _userService.UserExists(user.Email);
-            if (result)
-            {
-                var resultLogin =await _userService.Login(user.Email,user.Password);
-                if (resultLogin)
-                {
-                    return Ok();
-                }
-                else
-                {
-                    return BadRequest("You have been locked out");
-                }
-
-            }
-            return BadRequest("Invalid username or password");
-        }
-        
         [HttpPost("Logout")]
         public async Task<IActionResult> Logout()
         {
@@ -184,5 +240,6 @@ namespace ProiectLicenta.Controllers
             }
             return BadRequest();
         }
+
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting.Internal;
+using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories;
@@ -60,7 +61,7 @@ namespace ProiectLicenta.Controllers
             return Ok(source);
         }
         [HttpPost]
-        [Authorize("Artist,Admin")]
+        [Authorize(Roles =UserRoles.Artist)]
         public virtual async Task<IActionResult> Create(SongCreateDTO obj)
         {
             var result = mapper.Map<Song>(obj);

@@ -11,7 +11,7 @@ namespace ProiectLicenta.Services
         Task<bool> UserExists(string email);
         Task<bool> Login(string email,string password);
         Task Logout();
-        Task<bool> DeleteUser(string email);
+        Task<bool> DeleteUser(string name);
         Task<ApplicationUserDTO> GetById(string id);
         Task<List<ApplicationUserDTO>> GetAll();
         Task<ApplicationUserDTO> Update(ApplicationUserDTO dto);

@@ -57,6 +57,7 @@ namespace ProiectLicenta.Services
 
                 if (user.isArtist == true)
                 {
+
                     await _userManager.AddToRoleAsync(currentUser, "Artist");
 
                     Artist artist = new Artist();
@@ -84,9 +85,9 @@ namespace ProiectLicenta.Services
             return null;
         }
 
-        public async Task<bool> DeleteUser(string email)
+        public async Task<bool> DeleteUser(string name)
         {
-            ApplicationUser user =await _userManager.FindByEmailAsync(email);
+            ApplicationUser user =await _userManager.FindByNameAsync(name);
             if (await _userManager.IsInRoleAsync(user, "Artist"))
             {
                 var artist = user.Artist;
@@ -148,6 +149,7 @@ namespace ProiectLicenta.Services
         {
             var user = await _userManager.FindByIdAsync(email);
             var result = await _signInManager.PasswordSignInAsync(user, password, isPersistent: false, lockoutOnFailure: true);
+           
             return result !=null;
         }
 

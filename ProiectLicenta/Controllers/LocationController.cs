@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories;
@@ -26,7 +27,7 @@ namespace ProiectLicenta.Controllers
             mapper = new Mapper(configuration);
         }
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(LocationCreateDTO obj)
         {
             var result = mapper.Map<Location>(obj);
@@ -34,7 +35,7 @@ namespace ProiectLicenta.Controllers
             return Ok(obj);
         }
         [HttpPut("update")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Update(LocationCreateDTO obj)
         {
             var result = mapper.Map<Location>(obj);
@@ -43,7 +44,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpDelete("delete/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Delete(int id)
         {
             var obj = GetById(id);
