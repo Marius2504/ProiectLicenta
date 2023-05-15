@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories.Interfaces;
@@ -34,7 +35,7 @@ namespace ProiectLicenta.Controllers
             return Ok(obj);
         }
         [HttpPut("update")]
-        [Authorize(Roles = "Artist,Admin")]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Update(GenreCreateDTO obj)
         {
             var result = mapper.Map<Genre>(obj);
@@ -43,7 +44,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpDelete("delete/{id}")]
-        [Authorize(Roles = "Artist,Admin")]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Delete(int id)
         {
             var obj = GetById(id);

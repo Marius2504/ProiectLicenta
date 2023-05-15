@@ -1,27 +1,17 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ProiectLicenta.Data;
 using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs;
-using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Email;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Entities.Login;
 using ProiectLicenta.Entities.Register;
-using ProiectLicenta.Repositories;
-using ProiectLicenta.Repositories.Interfaces;
 using ProiectLicenta.Services;
 using System.IdentityModel.Tokens.Jwt;
-using System.Reflection.Metadata;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
-using System.Text.Unicode;
 
 namespace ProiectLicenta.Controllers
 {
@@ -31,26 +21,18 @@ namespace ProiectLicenta.Controllers
     {
         private readonly IUserService _userService;
         private readonly IEmailSender _email;
-        private readonly ArtistRepository _artistRepository;
-        private readonly ClientRepository _clientRepository;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly DataContext _dataContext;
         private readonly IConfiguration _configuration;
 
-        public UserController(IUserService userService, IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository,
-            UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager,
-            DataContext dataContext, IConfiguration configuration)
+        public UserController(IUserService userService, IEmailSender email,
+            UserManager<ApplicationUser> userManager,RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration)
         {
             this._userService = userService;
             this._email = email;
-            this._artistRepository = artistRepository;
-            this._clientRepository = clientRepository;
             this._userManager = userManager;
-            this._signInManager = signInManager;
-            this._roleManager = roleManager;
-            this._dataContext = dataContext;
+            this._roleManager = roleManager;    
             this._configuration = configuration;
         }
 
@@ -130,9 +112,9 @@ namespace ProiectLicenta.Controllers
                     await _userManager.AddToRoleAsync(currentUser, UserRoles.Artist);
                 }
             }
-            //var code = await _userService.GetConfirmationEmail(currentUser.Id);
-            //var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
-            //await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
+            var code = await _userService.GetConfirmationEmail(currentUser.Id);
+            var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
+            await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
 
@@ -144,7 +126,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpDelete("delete/{email}")]
-        [Authorize("Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> Delete(string email)
         {
             var result = await _userService.UserExists(email);
@@ -160,14 +142,14 @@ namespace ProiectLicenta.Controllers
             return BadRequest("The user no longer exists");
         }
         [HttpGet("all")]
-        [Authorize("Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetAll()
         {
             var list = await _userService.GetAll();
             return Ok(list);
         }
         [HttpGet("{id}")]
-        [Authorize("Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetById(string id)
         {
             var user = await _userService.GetById(id);
@@ -178,7 +160,7 @@ namespace ProiectLicenta.Controllers
             return BadRequest("User no longer exists");
         }
         [HttpPut]
-        [Authorize("Client,Admin")]
+        [Authorize(Roles = UserRoles.Client + "," + UserRoles.Admin)]
         public async Task<IActionResult> Update(ApplicationUserDTO user)
         {
             if (user != null)
@@ -193,7 +175,7 @@ namespace ProiectLicenta.Controllers
             return BadRequest("Null user");
         }
         [HttpGet("roles")]
-        [Authorize("Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetUserWithRoles(string id)
         {
             var user = await _userService.GetById(id);

@@ -61,7 +61,7 @@ namespace ProiectLicenta.Controllers
             return Ok(source);
         }
         [HttpPost]
-        [Authorize(Roles =UserRoles.Artist)]
+        [Authorize(Roles =UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(SongCreateDTO obj)
         {
             var result = mapper.Map<Song>(obj);
@@ -69,7 +69,7 @@ namespace ProiectLicenta.Controllers
             return Ok(obj);
         }
         [HttpPut("update")]
-        [Authorize("Artist,Admin")]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Update(SongCreateDTO obj)
         {
             var result = mapper.Map<Song>(obj);
@@ -78,7 +78,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpDelete("delete/{id}")]
-        [Authorize("Artist,Admin")]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Delete(int id)
         {
             var obj = GetById(id);
