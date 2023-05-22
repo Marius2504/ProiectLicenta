@@ -23,7 +23,7 @@ namespace ProiectLicenta.Repositories
             return await _context.Set<T>().FindAsync(id);
         }
    
-        public async Task<List<T>> GetAll()
+        public virtual async Task<List<T>> GetAll()
         {
             return await _context.Set<T>().ToListAsync();
         }

@@ -13,5 +13,9 @@ namespace ProiectLicenta.Repositories
         {
             return await _context.Songs.Include(s=>s.Album).Include(s=>s.Genre).FirstOrDefaultAsync(s=>s.Id == id);
         }
+        public IQueryable<Song> GetAllQuerry()
+        {
+            return _context.Set<Song>().AsQueryable();
+        }
     }
 }

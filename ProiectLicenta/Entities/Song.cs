@@ -9,6 +9,7 @@ namespace ProiectLicenta.Entities
         public int Duration { get; set; }
         public string ServerLink { get; set; }
 
+        public string ImagePath { get; set; }
         public int ArtistId { get; set; }
         public int? AlbumId { get; set; }
         public int GenreId { get; set; }
@@ -18,6 +19,8 @@ namespace ProiectLicenta.Entities
         public Album Album { get; set; }
         [JsonIgnore]
         public Genre Genre { get; set; }
+        [JsonIgnore]
+        public List<ApplicationUser> UsersWhoLiked { get; set; }
 
 
     }

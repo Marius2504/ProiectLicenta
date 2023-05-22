@@ -8,6 +8,7 @@ using ProiectLicenta.Email;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Entities.Login;
 using ProiectLicenta.Entities.Register;
+using ProiectLicenta.Repositories;
 using ProiectLicenta.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -24,16 +25,22 @@ namespace ProiectLicenta.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
+        private readonly ArtistRepository _artistRepository;
+        private readonly ClientRepository _clientRepository;
 
         public UserController(IUserService userService, IEmailSender email,
             UserManager<ApplicationUser> userManager,RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ArtistRepository artistRepository,
+            ClientRepository clientRepository)
         {
             this._userService = userService;
             this._email = email;
             this._userManager = userManager;
             this._roleManager = roleManager;    
             this._configuration = configuration;
+            this._artistRepository = artistRepository;
+            this._clientRepository = clientRepository;
         }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
@@ -110,6 +117,25 @@ namespace ProiectLicenta.Controllers
                 if (await _roleManager.RoleExistsAsync(UserRoles.Artist))
                 {
                     await _userManager.AddToRoleAsync(currentUser, UserRoles.Artist);
+
+                    Artist artist = new Artist();
+                    artist.Name = user.UserName;
+                    artist.ApplicationUser = currentUser;
+                    artist.ApplicationUserId = currentUser.Id;
+                    await _artistRepository.Add(artist);
+                }
+            }
+            else
+            {
+                if (await _roleManager.RoleExistsAsync(UserRoles.Client))
+                {
+                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Client);
+                    Client client = new Client();
+                    client.Name = user.UserName;
+                    client.Email = user.Email;
+                    client.ApplicationUser = currentUser;
+                    client.ApplicationUserId = currentUser.Id;
+                    await _clientRepository.Add(client);
                 }
             }
             var code = await _userService.GetConfirmationEmail(currentUser.Id);
