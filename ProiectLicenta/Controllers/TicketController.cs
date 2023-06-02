@@ -21,7 +21,7 @@ namespace ProiectLicenta.Controllers
             this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<TicketCreateDTO, Ticket>();
+                cfg.CreateMap<TicketCreateDTO, Ticket>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }

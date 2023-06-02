@@ -11,11 +11,18 @@ namespace ProiectLicenta.Repositories
         }
         public async Task<Song?> GetSongWithIncludes(int id)
         {
-            return await _context.Songs.Include(s=>s.Album).Include(s=>s.Genre).FirstOrDefaultAsync(s=>s.Id == id);
+            return await _context.Songs
+                .Include(s=>s.Album)
+                .Include(s=>s.Genre)
+                .Include(a =>a.Artist)
+                .Include(m=>m.Message)
+                .Include(l =>l.UsersWhoLiked)
+                .FirstOrDefaultAsync(s=>s.Id == id);
         }
-        public IQueryable<Song> GetAllQuerry()
+        
+        public async Task<Song?> GetByName(string name)
         {
-            return _context.Set<Song>().AsQueryable();
+            return await _context.Songs.FirstOrDefaultAsync(s=>s.Name == name);
         }
     }
 }

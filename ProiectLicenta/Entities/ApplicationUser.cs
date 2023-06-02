@@ -3,11 +3,11 @@ using System.Text.Json.Serialization;
 
 namespace ProiectLicenta.Entities
 {
-    public class ApplicationUser:IdentityUser
+    public class AppUser:IdentityUser
     {
         public string Name { get; set; }
         public string ImagePath { get; set; }
-
+        
         [JsonIgnore]
         public List<Song> LikedSongs { get; set; }
         [JsonIgnore]
@@ -16,5 +16,6 @@ namespace ProiectLicenta.Entities
         public Client Client { get; set; }
         [JsonIgnore]
         public Artist Artist { get; set; }
+        
     }
 }

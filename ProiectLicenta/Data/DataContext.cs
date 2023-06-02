@@ -2,10 +2,11 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ProiectLicenta.Entities;
+using System.Reflection.Emit;
 
 namespace ProiectLicenta.Data
 {
-    public class DataContext: IdentityDbContext<ApplicationUser>
+    public class DataContext: IdentityDbContext<AppUser>
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options) { }
        
@@ -22,5 +23,6 @@ namespace ProiectLicenta.Data
         public DbSet<Playlist> Playlists { get; set; }
         public DbSet<Song> Songs { get; set; }
         public DbSet<Ticket> Ticket { get; set; }
+        public DbSet<Message> Messages { get; set; }
     }
 }

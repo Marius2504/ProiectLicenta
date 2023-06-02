@@ -23,16 +23,23 @@ namespace ProiectLicenta.Controllers
             this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<AlbumCreateDTO, Album>();
+                cfg.CreateMap<AlbumCreateDTO, Album>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }
-        
+        [HttpGet("artist/{id}")]
+        public IActionResult GetSongsFromArtistId(int id)
+        {
+            var songs = _repository.GetAllQuerry().Where(q => q.ArtistId == id);
+            return Ok(songs);
+        }
+
         [HttpPost]
-        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
+        //[Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(AlbumCreateDTO obj)
         { 
             var result = mapper.Map<Album>(obj);
+            result.ImagePath = "";
             await _repository.Add(result);
             return Ok(obj);
         }

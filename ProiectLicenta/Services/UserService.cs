@@ -20,14 +20,14 @@ namespace ProiectLicenta.Services
         private readonly IEmailSender _email;
         private readonly ArtistRepository _artistRepository;
         private readonly ClientRepository _clientRepository;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly DataContext _dataContext;
         protected MapperConfiguration configuration;
         Mapper mapper;
 
-        public UserService(IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
+        public UserService(IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
         {
             this._email = email;
             this._artistRepository = artistRepository;
@@ -38,13 +38,14 @@ namespace ProiectLicenta.Services
             this._dataContext = dataContext;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<ApplicationUser, ApplicationUserDTO>();
+                cfg.CreateMap<AppUser, AppUserDTO>().ReverseMap(); 
             });
             mapper = new Mapper(configuration);
+            
         }
-        public async Task<ApplicationUser?> Create(RegisterUser user)
+        public async Task<AppUser?> Create(RegisterUser user)
         {
-            ApplicationUser currentUser = new ApplicationUser();
+            AppUser currentUser = new AppUser();
             currentUser.Email = user.Email;
             currentUser.UserName = user.UserName;
             currentUser.Name = user.UserName;
@@ -62,7 +63,7 @@ namespace ProiectLicenta.Services
 
                     Artist artist = new Artist();
                     artist.Name = user.UserName;
-                    artist.ApplicationUserId = currentUser.Id;
+                    artist.AppUserId = currentUser.Id;
                     artist.Description = "";
                     await _artistRepository.Add(artist);
 
@@ -72,7 +73,7 @@ namespace ProiectLicenta.Services
                     await _userManager.AddToRoleAsync(currentUser, "Client");
                     Client client = new Client();
                     client.Name = user.UserName;
-                    client.ApplicationUserId = currentUser.Id;
+                    client.AppUserId = currentUser.Id;
                     client.Age = 0;
                     client.Email = "";
                     await _clientRepository.Add(client);
@@ -87,7 +88,7 @@ namespace ProiectLicenta.Services
 
         public async Task<bool> DeleteUser(string name)
         {
-            ApplicationUser user =await _userManager.FindByNameAsync(name);
+            AppUser user =await _userManager.FindByNameAsync(name);
             if (await _userManager.IsInRoleAsync(user, "Artist"))
             {
                 var artist = user.Artist;
@@ -108,22 +109,28 @@ namespace ProiectLicenta.Services
             return await _userManager.GeneratePasswordResetTokenAsync(currentUser);
         }
 
-        public async Task<List<ApplicationUserDTO>> GetAll()
+        public async Task<List<AppUserDTO>> GetAll()
         {
             var users = await _userManager.Users.ToListAsync();
-            var list = new List<ApplicationUserDTO>();
+            var list = new List<AppUserDTO>();
             foreach (var user in users)
             {
-                list.Add(mapper.Map<ApplicationUserDTO>(user));
+                list.Add(mapper.Map<AppUserDTO>(user));
             }
             
             return list;
         }
 
-        public async Task<ApplicationUserDTO> GetById(string id)
+        public async Task<AppUserDTO> GetByEmail(string email)
+        {
+            var user = await _dataContext.Users.Include(x => x.LikedSongs).Include(a => a.Messages).FirstOrDefaultAsync(a => a.Email == email);
+            return mapper.Map<AppUserDTO>(user);
+        }
+
+        public async Task<AppUserDTO> GetById(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            return mapper.Map<ApplicationUserDTO>(user);
+            return mapper.Map<AppUserDTO>(user);
         }
 
         public async Task<string> GetConfirmationEmail(string id)
@@ -157,13 +164,24 @@ namespace ProiectLicenta.Services
         {
             await _signInManager.SignOutAsync();      
         }
-
-        public async Task<ApplicationUserDTO> Update(ApplicationUserDTO dto)
+       
+        public async Task<AppUserDTO> Update(AppUserDTO dto)
         {
-            var user = mapper.Map<ApplicationUser>(dto);
+            var user = await _userManager.FindByIdAsync(dto.Id);
             if (user != null)
             {
-                _dataContext.Entry(user).State = EntityState.Modified;
+                if (user.Name != dto.Name) user.Name = dto.Name;
+                if (user.Email != dto.Email) 
+                { 
+                    user.Email = dto.Email;
+                    user.NormalizedEmail = dto.Email.ToUpper();
+                }
+                if (user.PhoneNumber != dto.PhoneNumber) user.PhoneNumber = dto.PhoneNumber;
+                if (user.ImagePath != dto.ImagePath) user.ImagePath = dto.ImagePath;
+
+                var entry = _dataContext.Entry(user);
+                entry.State= EntityState.Modified;
+               // _dataContext.Entry(user).State = EntityState.Modified;
                 await _dataContext.SaveChangesAsync();
             }
             return await GetById(dto.Id);
@@ -178,8 +196,15 @@ namespace ProiectLicenta.Services
         public async Task<bool> VerifyToken(string id, string code)
         {
             var user= await _userManager.FindByIdAsync(id); 
-            var result = await _userManager.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, UserManager<ApplicationUser>.ResetPasswordTokenPurpose, code);
+            var result = await _userManager.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, UserManager<AppUser>.ResetPasswordTokenPurpose, code);
             return result;
+        }
+        public async Task<AppUser?> GetUserWithInclude(string id)
+        {
+            var user = await _dataContext.Users.Include(x => x.LikedSongs).Include(a => a.Messages).FirstOrDefaultAsync(a => a.Id == id);
+            return user;
+
         }
     }
 }
+

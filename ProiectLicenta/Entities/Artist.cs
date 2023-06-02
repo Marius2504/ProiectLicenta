@@ -9,10 +9,10 @@ namespace ProiectLicenta.Entities
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        [ForeignKey("ApplicationUser")]
-        public string ApplicationUserId { get; set; }
+        [ForeignKey("AppUser")]
+        public string AppUserId { get; set; }
         [JsonIgnore]
-        public ApplicationUser ApplicationUser { get; set; }
+        public AppUser AppUser { get; set; }
         [JsonIgnore]
         public List<Event> Events { get; set; }
         [JsonIgnore]

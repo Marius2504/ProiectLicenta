@@ -22,7 +22,7 @@ namespace ProiectLicenta.Controllers
             this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<LocationCreateDTO, Location>();
+                cfg.CreateMap<LocationCreateDTO, Location>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }

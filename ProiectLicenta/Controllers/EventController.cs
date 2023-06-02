@@ -23,10 +23,18 @@ namespace ProiectLicenta.Controllers
             this._eventRepository = eventRepository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<EventCreateDTO, Event>();
+                cfg.CreateMap<EventCreateDTO, Event>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }
+
+        [HttpGet("artist/{id}")]
+        public IActionResult GetEventsFromArtistId(int id)
+        {
+            var songs = _eventRepository.GetAllQuerry().Where(q => q.Artists.Any(artist => artist.Id == id));
+            return Ok(songs);
+        }
+
         [HttpPost]
         [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(EventCreateDTO obj)

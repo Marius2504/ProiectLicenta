@@ -22,10 +22,11 @@ namespace ProiectLicenta.Controllers
             this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<PlaylistCreateDTO, Playlist>();
+                cfg.CreateMap<PlaylistCreateDTO, Playlist>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }
+
         [HttpPost]
         [Authorize()]
         public virtual async Task<IActionResult> Create(PlaylistCreateDTO obj)

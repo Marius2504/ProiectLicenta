@@ -22,6 +22,36 @@ namespace ProiectLicenta.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AppUserMessage", b =>
+                {
+                    b.Property<string>("LikesFromUsersId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("MessagesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LikesFromUsersId", "MessagesId");
+
+                    b.HasIndex("MessagesId");
+
+                    b.ToTable("AppUserMessage");
+                });
+
+            modelBuilder.Entity("AppUserSong", b =>
+                {
+                    b.Property<int>("LikedSongsId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsersWhoLikedId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("LikedSongsId", "UsersWhoLikedId");
+
+                    b.HasIndex("UsersWhoLikedId");
+
+                    b.ToTable("AppUserSong");
+                });
+
             modelBuilder.Entity("ArtistEvent", b =>
                 {
                     b.Property<int>("ArtistsId")
@@ -200,6 +230,17 @@ namespace ProiectLicenta.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ArtistId");
@@ -207,7 +248,7 @@ namespace ProiectLicenta.Migrations
                     b.ToTable("Albums");
                 });
 
-            modelBuilder.Entity("ProiectLicenta.Entities.ApplicationUser", b =>
+            modelBuilder.Entity("ProiectLicenta.Entities.AppUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -225,6 +266,10 @@ namespace ProiectLicenta.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -284,7 +329,7 @@ namespace ProiectLicenta.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApplicationUserId")
+                    b.Property<string>("AppUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
@@ -298,7 +343,7 @@ namespace ProiectLicenta.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId")
+                    b.HasIndex("AppUserId")
                         .IsUnique();
 
                     b.ToTable("Artists");
@@ -315,7 +360,7 @@ namespace ProiectLicenta.Migrations
                     b.Property<int>("Age")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApplicationUserId")
+                    b.Property<string>("AppUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
@@ -329,7 +374,7 @@ namespace ProiectLicenta.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId")
+                    b.HasIndex("AppUserId")
                         .IsUnique();
 
                     b.ToTable("Clients");
@@ -345,6 +390,10 @@ namespace ProiectLicenta.Migrations
 
                     b.Property<DateTime>("DateTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("LocationId")
                         .HasColumnType("int");
@@ -368,6 +417,10 @@ namespace ProiectLicenta.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -403,6 +456,33 @@ namespace ProiectLicenta.Migrations
                     b.ToTable("Locations");
                 });
 
+            modelBuilder.Entity("ProiectLicenta.Entities.Message", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SongId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WhoSentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SongId")
+                        .IsUnique();
+
+                    b.ToTable("Messages");
+                });
+
             modelBuilder.Entity("ProiectLicenta.Entities.Playlist", b =>
                 {
                     b.Property<int>("Id")
@@ -412,6 +492,10 @@ namespace ProiectLicenta.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePath")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -443,6 +527,10 @@ namespace ProiectLicenta.Migrations
 
                     b.Property<int>("GenreId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -498,6 +586,36 @@ namespace ProiectLicenta.Migrations
                     b.ToTable("Ticket");
                 });
 
+            modelBuilder.Entity("AppUserMessage", b =>
+                {
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("LikesFromUsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProiectLicenta.Entities.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessagesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AppUserSong", b =>
+                {
+                    b.HasOne("ProiectLicenta.Entities.Song", null)
+                        .WithMany()
+                        .HasForeignKey("LikedSongsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UsersWhoLikedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ArtistEvent", b =>
                 {
                     b.HasOne("ProiectLicenta.Entities.Artist", null)
@@ -539,7 +657,7 @@ namespace ProiectLicenta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", null)
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -548,7 +666,7 @@ namespace ProiectLicenta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", null)
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -563,7 +681,7 @@ namespace ProiectLicenta.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", null)
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -572,7 +690,7 @@ namespace ProiectLicenta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", null)
+                    b.HasOne("ProiectLicenta.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -592,24 +710,24 @@ namespace ProiectLicenta.Migrations
 
             modelBuilder.Entity("ProiectLicenta.Entities.Artist", b =>
                 {
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", "ApplicationUser")
+                    b.HasOne("ProiectLicenta.Entities.AppUser", "AppUser")
                         .WithOne("Artist")
-                        .HasForeignKey("ProiectLicenta.Entities.Artist", "ApplicationUserId")
+                        .HasForeignKey("ProiectLicenta.Entities.Artist", "AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ApplicationUser");
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("ProiectLicenta.Entities.Client", b =>
                 {
-                    b.HasOne("ProiectLicenta.Entities.ApplicationUser", "ApplicationUser")
+                    b.HasOne("ProiectLicenta.Entities.AppUser", "AppUser")
                         .WithOne("Client")
-                        .HasForeignKey("ProiectLicenta.Entities.Client", "ApplicationUserId")
+                        .HasForeignKey("ProiectLicenta.Entities.Client", "AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ApplicationUser");
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("ProiectLicenta.Entities.Event", b =>
@@ -621,6 +739,17 @@ namespace ProiectLicenta.Migrations
                         .IsRequired();
 
                     b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("ProiectLicenta.Entities.Message", b =>
+                {
+                    b.HasOne("ProiectLicenta.Entities.Song", "Song")
+                        .WithOne("Message")
+                        .HasForeignKey("ProiectLicenta.Entities.Message", "SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Song");
                 });
 
             modelBuilder.Entity("ProiectLicenta.Entities.Song", b =>
@@ -676,7 +805,7 @@ namespace ProiectLicenta.Migrations
                     b.Navigation("Songs");
                 });
 
-            modelBuilder.Entity("ProiectLicenta.Entities.ApplicationUser", b =>
+            modelBuilder.Entity("ProiectLicenta.Entities.AppUser", b =>
                 {
                     b.Navigation("Artist")
                         .IsRequired();
@@ -716,6 +845,12 @@ namespace ProiectLicenta.Migrations
             modelBuilder.Entity("ProiectLicenta.Entities.Playlist", b =>
                 {
                     b.Navigation("Songs");
+                });
+
+            modelBuilder.Entity("ProiectLicenta.Entities.Song", b =>
+                {
+                    b.Navigation("Message")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

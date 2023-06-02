@@ -6,6 +6,7 @@ using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories;
+using ProiectLicenta.Services;
 using System.Data;
 
 namespace ProiectLicenta.Controllers
@@ -15,6 +16,7 @@ namespace ProiectLicenta.Controllers
     public class ArtistController : GenericController<ArtistCreateDTO,Artist>
     {
         private readonly ArtistRepository _repository;
+        private readonly UserService _userService;
         protected MapperConfiguration configuration;
         Mapper mapper;
 
@@ -23,10 +25,22 @@ namespace ProiectLicenta.Controllers
             this._repository = repository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<ArtistCreateDTO, Artist>();
+                cfg.CreateMap<ArtistCreateDTO, Artist>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }
+        [HttpGet("user/{userId}")]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
+        public async Task<IActionResult> GetArtistOfUserId(string userId)
+        {
+            var artist = await _repository.GetArtistOfUser(userId);
+            if(artist !=null)
+            {
+                return Ok(artist);
+            }
+            return BadRequest("This user is not related to an artist");
+        }
+
         [HttpPost]
         [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(ArtistCreateDTO obj)

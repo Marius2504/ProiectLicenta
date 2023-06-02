@@ -13,5 +13,10 @@ namespace ProiectLicenta.Repositories
         {
             return await _context.Artists.Include(a=>a.Albums).Include(a=>a.Songs).FirstOrDefaultAsync(a=>a.Id == id);
         }
+
+        public async Task<Artist> GetArtistOfUser(string userId)
+        {
+            return await _context.Artists.Where(a => a.AppUserId == userId).FirstOrDefaultAsync();
+        }
     }
 }

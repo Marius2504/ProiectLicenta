@@ -20,7 +20,9 @@ namespace ProiectLicenta.Entities
         [JsonIgnore]
         public Genre Genre { get; set; }
         [JsonIgnore]
-        public List<ApplicationUser> UsersWhoLiked { get; set; }
+        public Message Message { get; set; }
+        [JsonIgnore]
+        public List<AppUser> UsersWhoLiked { get; set; }
 
 
     }

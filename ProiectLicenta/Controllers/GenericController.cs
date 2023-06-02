@@ -24,7 +24,7 @@ namespace ProiectLicenta.Controllers
             this._genericRepository = genericRepository;
             configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<EntityDTO, Entity>();
+                cfg.CreateMap<EntityDTO, Entity>().ReverseMap();
             });
             mapper = new Mapper(configuration);
         }
@@ -41,32 +41,7 @@ namespace ProiectLicenta.Controllers
             var obj = await _genericRepository.Get(id);
             return Ok(obj);
         }
-        /*
-        [HttpPost]
         
-         public virtual async Task<IActionResult> Create(EntityDTO obj)
-         { 
-             var result = mapper.Map<Entity>(obj);
-             await _genericRepository.Add(result);
-             return Ok(obj);
-         }
-         [HttpPut("update")]
-         public virtual async Task<IActionResult> Update(EntityDTO obj)
-         {
-             var result = mapper.Map<Entity>(obj);
-             await _genericRepository.Update(result);
-             return Ok(obj);
-         }
-
-         [HttpDelete("delete/{id}")]
-         public virtual async Task<IActionResult> Delete(int id)
-         {
-             var obj = GetById(id);
-             await _genericRepository.Delete(id);
-             return Ok(obj);
-         }
-
-         */
 
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProiectLicenta.Data;
+using ProiectLicenta.Entities;
 using ProiectLicenta.Repositories.Interfaces;
 
 namespace ProiectLicenta.Repositories
@@ -22,7 +23,10 @@ namespace ProiectLicenta.Repositories
         {
             return await _context.Set<T>().FindAsync(id);
         }
-   
+        public IQueryable<T> GetAllQuerry()
+        {
+            return _context.Set<T>().AsQueryable();
+        }
         public virtual async Task<List<T>> GetAll()
         {
             return await _context.Set<T>().ToListAsync();

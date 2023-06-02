@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using AutoMapper.Internal;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using ProiectLicenta.Data.Auth;
 using ProiectLicenta.DTOs;
+using ProiectLicenta.DTOs.Create;
 using ProiectLicenta.Email;
 using ProiectLicenta.Entities;
 using ProiectLicenta.Entities.Login;
@@ -22,17 +25,23 @@ namespace ProiectLicenta.Controllers
     {
         private readonly IUserService _userService;
         private readonly IEmailSender _email;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly ArtistRepository _artistRepository;
         private readonly ClientRepository _clientRepository;
+        private readonly SongRepository _songRepository;
+
+        protected MapperConfiguration configurationMap;
+        Mapper mapper;
 
         public UserController(IUserService userService, IEmailSender email,
-            UserManager<ApplicationUser> userManager,RoleManager<IdentityRole> roleManager,
+            UserManager<AppUser> userManager,RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
             ArtistRepository artistRepository,
-            ClientRepository clientRepository)
+            ClientRepository clientRepository,
+            SongRepository songRepository
+            )
         {
             this._userService = userService;
             this._email = email;
@@ -41,6 +50,12 @@ namespace ProiectLicenta.Controllers
             this._configuration = configuration;
             this._artistRepository = artistRepository;
             this._clientRepository = clientRepository;
+            this._songRepository = songRepository;
+            configurationMap = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<AppUserDTO, AppUser>().ReverseMap(); 
+            });
+            mapper = new Mapper(configurationMap);
         }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
@@ -93,13 +108,15 @@ namespace ProiectLicenta.Controllers
             if (userExists != null || userExistsByEmail!=null)
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "User already exists!" });
 
-            ApplicationUser currentUser = new()
+            AppUser currentUser = new()
             {
                 Email = user.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 Name = user.UserName,
                 UserName = user.UserName,
+                ImagePath = ""
             };
+            
             var result = await _userManager.CreateAsync(currentUser, user.Password);
 
             if (!result.Succeeded) 
@@ -120,8 +137,9 @@ namespace ProiectLicenta.Controllers
 
                     Artist artist = new Artist();
                     artist.Name = user.UserName;
-                    artist.ApplicationUser = currentUser;
-                    artist.ApplicationUserId = currentUser.Id;
+                    artist.AppUser = currentUser;
+                    artist.AppUserId = currentUser.Id;
+                    artist.Description = "no description";
                     await _artistRepository.Add(artist);
                 }
             }
@@ -129,12 +147,13 @@ namespace ProiectLicenta.Controllers
             {
                 if (await _roleManager.RoleExistsAsync(UserRoles.Client))
                 {
-                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Client);
+                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Admin);
                     Client client = new Client();
                     client.Name = user.UserName;
                     client.Email = user.Email;
-                    client.ApplicationUser = currentUser;
-                    client.ApplicationUserId = currentUser.Id;
+                    client.Age = 18;
+                    client.AppUser = currentUser;
+                    client.AppUserId = currentUser.Id;
                     await _clientRepository.Add(client);
                 }
             }
@@ -168,14 +187,13 @@ namespace ProiectLicenta.Controllers
             return BadRequest("The user no longer exists");
         }
         [HttpGet("all")]
-        [Authorize(Roles = UserRoles.Admin)]
+       // [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetAll()
         {
             var list = await _userService.GetAll();
             return Ok(list);
         }
         [HttpGet("{id}")]
-        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetById(string id)
         {
             var user = await _userService.GetById(id);
@@ -185,11 +203,23 @@ namespace ProiectLicenta.Controllers
             }
             return BadRequest("User no longer exists");
         }
-        [HttpPut]
-        [Authorize(Roles = UserRoles.Client + "," + UserRoles.Admin)]
-        public async Task<IActionResult> Update(ApplicationUserDTO user)
+        [HttpGet("email/{email}")]
+        public async Task<IActionResult> GetByEmail(string email)
         {
+            var user = await _userService.GetByEmail(email);
             if (user != null)
+            {
+                return Ok(user);
+            }
+            return BadRequest("User no longer exists");
+        }
+        [HttpPut("update")]
+        [Authorize()]
+        public async Task<IActionResult> Update(AppUserDTO user)
+        {
+            var userInDb = await _userManager.FindByIdAsync(user.Id);
+            var userEmail = await _userManager.FindByEmailAsync(user.Email);
+            if (user != null && userInDb!=null && userEmail==null || userEmail.Id == user.Id)
             {
                 var currentUser = await _userService.Update(user);
                 if(currentUser.Equals(user))
@@ -247,6 +277,39 @@ namespace ProiectLicenta.Controllers
                 return Ok();
             }
             return BadRequest();
+        }
+
+        [HttpPost("addLike/{userId}/{songId}")]
+        public virtual async Task<IActionResult> Addlike(string userId, int songId)
+        {
+            var user = await _userService.GetUserWithInclude(userId);
+            var song = await _songRepository.Get(songId);
+            if (song != null)
+            {
+                if (!user.LikedSongs.Contains(song))
+                {
+                    user.LikedSongs.Add(song);
+                    await _userService.Update(mapper.Map<AppUserDTO>(user));
+                }
+                return Ok(user);
+            }
+            return BadRequest("Invalid song id");
+        }
+        [HttpPost("removeLike/{userId}/{songId}")]
+        public virtual async Task<IActionResult> Removelike(string userId, int songId)
+        {
+            var user = await _userService.GetUserWithInclude(userId);
+            var song = await _songRepository.Get(songId);
+            if (song != null)
+            {
+                if (user.LikedSongs.Contains(song))
+                {
+                    user.LikedSongs.Remove(song);
+                    await _userService.Update(mapper.Map<AppUserDTO>(user));
+                }
+                return Ok(user);
+            }
+            return BadRequest("Invalid song id");
         }
 
     }
