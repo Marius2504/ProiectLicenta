@@ -50,14 +50,25 @@ namespace ProiectLicenta.Controllers
             return Ok(obj);
         }
         [HttpPut("update")]
-        [Authorize(Roles = UserRoles.Admin)]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Update(ArtistCreateDTO obj)
         {
-            var result = mapper.Map<Artist>(obj);
-            await _repository.Update(result);
+            Artist artist =await _repository.Get(obj.Id);
+            artist.Id= obj.Id;
+            artist.Name = obj.Name;
+            artist.Description = obj.Description;
+            artist.ImagePath = obj.ImagePath;
+            await _repository.Update(artist);
+            
             return Ok(obj);
         }
+        /*
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string ImagePath { get; set; }
+        public string AppUserId { get; set; }
 
+        */
         [HttpDelete("delete/{id}")]
         [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Delete(int id)

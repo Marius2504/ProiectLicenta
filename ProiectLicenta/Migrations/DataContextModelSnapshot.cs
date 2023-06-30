@@ -337,6 +337,10 @@ namespace ProiectLicenta.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -447,6 +451,10 @@ namespace ProiectLicenta.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Street")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -477,8 +485,7 @@ namespace ProiectLicenta.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SongId")
-                        .IsUnique();
+                    b.HasIndex("SongId");
 
                     b.ToTable("Messages");
                 });
@@ -744,8 +751,8 @@ namespace ProiectLicenta.Migrations
             modelBuilder.Entity("ProiectLicenta.Entities.Message", b =>
                 {
                     b.HasOne("ProiectLicenta.Entities.Song", "Song")
-                        .WithOne("Message")
-                        .HasForeignKey("ProiectLicenta.Entities.Message", "SongId")
+                        .WithMany("Messages")
+                        .HasForeignKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -849,8 +856,7 @@ namespace ProiectLicenta.Migrations
 
             modelBuilder.Entity("ProiectLicenta.Entities.Song", b =>
                 {
-                    b.Navigation("Message")
-                        .IsRequired();
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

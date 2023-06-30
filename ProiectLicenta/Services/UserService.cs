@@ -24,16 +24,18 @@ namespace ProiectLicenta.Services
         private readonly SignInManager<AppUser> _signInManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly DataContext _dataContext;
+        private readonly AlbumRepository _albumRepository;
         protected MapperConfiguration configuration;
         Mapper mapper;
 
-        public UserService(IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext)
+        public UserService(IEmailSender email, ArtistRepository artistRepository, ClientRepository clientRepository, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, RoleManager<IdentityRole> roleManager, DataContext dataContext, AlbumRepository albumRepository)
         {
             this._email = email;
             this._artistRepository = artistRepository;
             this._clientRepository = clientRepository;
             this._userManager = userManager;
             this._signInManager = signInManager;
+            this._albumRepository = albumRepository;
             this.roleManager = roleManager;
             this._dataContext = dataContext;
             configuration = new MapperConfiguration(cfg =>
@@ -86,21 +88,27 @@ namespace ProiectLicenta.Services
             return null;
         }
 
-        public async Task<bool> DeleteUser(string name)
+        public async Task<bool> DeleteUser(string id)
         {
-            AppUser user =await _userManager.FindByNameAsync(name);
-            if (await _userManager.IsInRoleAsync(user, "Artist"))
+            var user = await GetUserWithInclude(id);
+            if (user != null)
             {
-                var artist = user.Artist;
-                await _artistRepository.Delete(artist.Id);
+                user.LikedSongs.Clear();
+                user.Messages.Clear();
+                await Update(user);
+                user = await GetUserWithInclude(id);
+
+                if(user.Artist!= null)
+                {
+                    var artist = await _artistRepository.GetArtistWithIncludes(user.Artist.Id);
+                    foreach(var album in artist.Albums.ToList())
+                    {
+                        await _albumRepository.Delete(album.Id);
+                    }
+                }
+                await _userManager.DeleteAsync(user);
             }
-            else
-            {
-                var client = user.Client;
-                await _clientRepository.Delete(client.Id);
-            }
-            var result = await _userManager.DeleteAsync(user);
-            return result.Succeeded;
+            return true;
         }
 
         public async Task<string> GeneratePasswordToken(string id)
@@ -165,7 +173,7 @@ namespace ProiectLicenta.Services
             await _signInManager.SignOutAsync();      
         }
        
-        public async Task<AppUserDTO> Update(AppUserDTO dto)
+        public async Task<AppUserDTO> Update(AppUser dto)
         {
             var user = await _userManager.FindByIdAsync(dto.Id);
             if (user != null)
@@ -176,6 +184,7 @@ namespace ProiectLicenta.Services
                     user.Email = dto.Email;
                     user.NormalizedEmail = dto.Email.ToUpper();
                 }
+                if(user.EmailConfirmed != dto.EmailConfirmed) user.EmailConfirmed = dto.EmailConfirmed;
                 if (user.PhoneNumber != dto.PhoneNumber) user.PhoneNumber = dto.PhoneNumber;
                 if (user.ImagePath != dto.ImagePath) user.ImagePath = dto.ImagePath;
 
@@ -189,7 +198,7 @@ namespace ProiectLicenta.Services
 
         public async Task<bool> UserExists(string email)
         {
-            var user = await _userManager.FindByIdAsync(email);
+            var user = await _userManager.FindByEmailAsync(email);
             return user != null;
         }
 
@@ -201,7 +210,7 @@ namespace ProiectLicenta.Services
         }
         public async Task<AppUser?> GetUserWithInclude(string id)
         {
-            var user = await _dataContext.Users.Include(x => x.LikedSongs).Include(a => a.Messages).FirstOrDefaultAsync(a => a.Id == id);
+            var user = await _dataContext.Users.Include(x => x.LikedSongs).Include(a => a.Messages).Include(a=> a.Artist).Include(a=>a.Client).FirstOrDefaultAsync(a => a.Id == id);
             return user;
 
         }

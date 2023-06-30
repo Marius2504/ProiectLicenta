@@ -31,6 +31,7 @@ namespace ProiectLicenta.Controllers
         private readonly ArtistRepository _artistRepository;
         private readonly ClientRepository _clientRepository;
         private readonly SongRepository _songRepository;
+        private readonly MessageRepository _messageRepository;
 
         protected MapperConfiguration configurationMap;
         Mapper mapper;
@@ -40,7 +41,8 @@ namespace ProiectLicenta.Controllers
             IConfiguration configuration,
             ArtistRepository artistRepository,
             ClientRepository clientRepository,
-            SongRepository songRepository
+            SongRepository songRepository,
+            MessageRepository messageRepository
             )
         {
             this._userService = userService;
@@ -51,6 +53,7 @@ namespace ProiectLicenta.Controllers
             this._artistRepository = artistRepository;
             this._clientRepository = clientRepository;
             this._songRepository = songRepository;
+            this._messageRepository = messageRepository;
             configurationMap = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<AppUserDTO, AppUser>().ReverseMap(); 
@@ -98,11 +101,12 @@ namespace ProiectLicenta.Controllers
                 });
 
             }
-            return Unauthorized();
+            return BadRequest("E-mail or password incorrect");
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterUser user)
         {
+            
             var userExists = await _userManager.FindByNameAsync(user.UserName);
             var userExistsByEmail = await _userManager.FindByEmailAsync(user.Email);
             if (userExists != null || userExistsByEmail!=null)
@@ -140,6 +144,7 @@ namespace ProiectLicenta.Controllers
                     artist.AppUser = currentUser;
                     artist.AppUserId = currentUser.Id;
                     artist.Description = "no description";
+                    artist.ImagePath = "";
                     await _artistRepository.Add(artist);
                 }
             }
@@ -147,13 +152,14 @@ namespace ProiectLicenta.Controllers
             {
                 if (await _roleManager.RoleExistsAsync(UserRoles.Client))
                 {
-                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Admin);
+                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Client);
                     Client client = new Client();
                     client.Name = user.UserName;
                     client.Email = user.Email;
                     client.Age = 18;
                     client.AppUser = currentUser;
                     client.AppUserId = currentUser.Id;
+     
                     await _clientRepository.Add(client);
                 }
             }
@@ -163,25 +169,16 @@ namespace ProiectLicenta.Controllers
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
 
-        [HttpPost("Logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _userService.Logout();
-            return Ok();
-        }
+    
 
-        [HttpDelete("delete/{email}")]
+        [HttpDelete("delete/{id}")]
         [Authorize(Roles = UserRoles.Admin)]
-        public async Task<IActionResult> Delete(string email)
+        public async Task<IActionResult> Delete(string id)
         {
-            var result = await _userService.UserExists(email);
-            if (result)
+            var result = await _userService.GetUserWithInclude(id);
+            if (result != null)
             {
-                var resultDelete = await _userService.DeleteUser(email);
-                if (resultDelete == false)
-                {
-                    return BadRequest("The user haven't been deleted");
-                }
+                await _userService.DeleteUser(id);
                 return Ok();
             }
             return BadRequest("The user no longer exists");
@@ -215,22 +212,36 @@ namespace ProiectLicenta.Controllers
         }
         [HttpPut("update")]
         [Authorize()]
-        public async Task<IActionResult> Update(AppUserDTO user)
+        public async Task<IActionResult> Update(AppUserDTO dto)
         {
-            var userInDb = await _userManager.FindByIdAsync(user.Id);
-            var userEmail = await _userManager.FindByEmailAsync(user.Email);
-            if (user != null && userInDb!=null && userEmail==null || userEmail.Id == user.Id)
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            var userName = await _userManager.FindByNameAsync(dto.Name);
+            var userEmail = await _userManager.FindByEmailAsync(dto.Email);
+
+            if((userName !=null && userName.Id != user.Id) ||
+                (userEmail !=null && userEmail.Id != user.Id))
             {
-                var currentUser = await _userService.Update(user);
-                if(currentUser.Equals(user))
-                {
-                    return Ok(currentUser);
+                return BadRequest("Name or e-mail taken");
+            }
+
+            if(user !=null)
+            {
+                if (dto.Name != user.Name) user.Name = dto.Name;
+                if (dto.ImagePath != user.ImagePath) user.ImagePath = dto.ImagePath;
+                if (dto.Email !=user.Email) user.Email = dto.Email;
+                if (dto.PhoneNumber != user.PhoneNumber) user.PhoneNumber = dto.PhoneNumber;
+                if (dto.EmailConfirmed != null && dto.EmailConfirmed != user.EmailConfirmed) 
+                { 
+                     user.EmailConfirmed = (bool)dto.EmailConfirmed; 
                 }
-                return BadRequest("Error while updating");
+
+                var currentUser = await _userService.Update(user);
+                return Ok(currentUser);
             }
             return BadRequest("Null user");
         }
-        [HttpGet("roles")]
+        /*
+        [HttpGet("roles/")]
         [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetUserWithRoles(string id)
         {
@@ -242,6 +253,7 @@ namespace ProiectLicenta.Controllers
             }
             return BadRequest("User doesn't exist");
         }
+        */
         [HttpGet]
         public async Task<IActionResult> VerifyEmail(string id, string code)
         {
@@ -289,9 +301,9 @@ namespace ProiectLicenta.Controllers
                 if (!user.LikedSongs.Contains(song))
                 {
                     user.LikedSongs.Add(song);
-                    await _userService.Update(mapper.Map<AppUserDTO>(user));
+                    await _userService.Update(user);
                 }
-                return Ok(user);
+                return Ok(song);
             }
             return BadRequest("Invalid song id");
         }
@@ -305,9 +317,45 @@ namespace ProiectLicenta.Controllers
                 if (user.LikedSongs.Contains(song))
                 {
                     user.LikedSongs.Remove(song);
-                    await _userService.Update(mapper.Map<AppUserDTO>(user));
+                    var userDTO = mapper.Map<AppUserDTO>(user);
+                    await _userService.Update(user);
                 }
-                return Ok(user);
+                return Ok(song);
+            }
+            return BadRequest("Invalid song id");
+        }
+
+        [HttpPost("message/addLike/{userId}/{messageId}")]
+        public virtual async Task<IActionResult> AddLikeToMessage(string userId, int messageId)
+        {
+            var user = await _userService.GetUserWithInclude(userId);
+            var message = await _messageRepository.Get(messageId);
+            if (message != null)
+            {
+                if (!user.Messages.Contains(message))
+                {
+                    user.Messages.Add(message);
+                    var userDTO = mapper.Map<AppUserDTO>(user);
+                    await _userService.Update(user);
+                }
+                return Ok(message);
+            }
+            return BadRequest("Invalid song id");
+        }
+        [HttpPost("message/removeLike/{userId}/{messageId}")]
+        public virtual async Task<IActionResult> RemoveLikeToMessage(string userId, int messageId)
+        {
+            var user = await _userService.GetUserWithInclude(userId);
+            var message = await _messageRepository.Get(messageId);
+            if (message != null)
+            {
+                if (user.Messages.Contains(message))
+                {
+                    user.Messages.Remove(message);
+                    var userDTO = mapper.Map<AppUserDTO>(user);
+                    await _userService.Update(user);
+                }
+                return Ok(message);
             }
             return BadRequest("Invalid song id");
         }

@@ -47,9 +47,13 @@ namespace ProiectLicenta.Controllers
         [Authorize(Roles = UserRoles.Admin)]
         public virtual async Task<IActionResult> Delete(int id)
         {
-            var obj = GetById(id);
-            await _repository.Delete(id);
-            return Ok(obj);
+            var obj = await _repository.Get(id);
+            if (obj != null)
+            {
+                await _repository.Delete(id);
+                return Ok(obj);
+            }
+            return BadRequest("Item doesn't exist");
         }
     }
 }

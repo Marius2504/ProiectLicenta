@@ -40,6 +40,7 @@ builder.Services.AddScoped<LocationRepository>();
 builder.Services.AddScoped<PlaylistRepository>();
 builder.Services.AddScoped<SongRepository>();
 builder.Services.AddScoped<TicketRepository>();
+builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<SeedDatabase>();
 builder.Services.AddScoped<IEmailSender,EmailSender>();
@@ -72,9 +73,15 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
 {
-    builder.WithOrigins("http://localhost:4200")
-           .AllowAnyMethod()
-           .AllowAnyHeader();
+    
+    builder.AllowAnyOrigin()
+     .AllowAnyMethod()
+     .AllowAnyHeader();
+    /*
+    builder.WithOrigins("https://remix-606e2.firebaseapp.com")
+    .AllowAnyMethod()
+    .AllowAnyHeader();
+    */
 }));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

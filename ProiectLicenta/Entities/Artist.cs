@@ -9,6 +9,8 @@ namespace ProiectLicenta.Entities
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public string ImagePath { get; set; }
+
         [ForeignKey("AppUser")]
         public string AppUserId { get; set; }
         [JsonIgnore]

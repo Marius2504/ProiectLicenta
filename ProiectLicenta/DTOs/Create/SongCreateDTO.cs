@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using ProiectLicenta.Entities;
+using System.Text.Json.Serialization;
 
 namespace ProiectLicenta.DTOs.Create
 {
@@ -11,5 +12,7 @@ namespace ProiectLicenta.DTOs.Create
         public int ArtistId { get; set; }
         public int? AlbumId { get; set; }
         public int GenreId { get; set; }
+        public int likes { get; set; }
+        public List<Message>? Messages { get; set; }
     }
 }
