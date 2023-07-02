@@ -37,14 +37,21 @@ namespace ProiectLicenta.Controllers
         public async Task<IActionResult> GetByName(string name)
         {
             var obj = await _repository.GetByName(name);
-            return Ok(obj);
+            if (obj != null)
+            {
+                return Ok(obj);
+            }
+            return BadRequest("Song not found");
         }
         [HttpGet("includes/{id}")]
         public async Task<IActionResult> GetByIdWithIncludes(int id)
         {
             var obj = await _repository.GetSongWithIncludes(id);
-            var objToSend = mapper.Map<SongCreateDTO>(obj);
-            return Ok(objToSend);
+            if (obj != null) { 
+                var objToSend = mapper.Map<SongCreateDTO>(obj);
+                return Ok(objToSend);
+            }
+            return BadRequest("Song not found");
         }
         [HttpGet("album/{id}")]
         public IActionResult GetSongsFromAlbumId(int id)
@@ -67,7 +74,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpPost]
-       // [Authorize(Roles =UserRoles.Artist)]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(SongCreateDTO obj)
         {
             var song = new Song();
@@ -95,6 +102,7 @@ namespace ProiectLicenta.Controllers
                 if (result.Name != obj.Name) result.Name = obj.Name;
                 if (result.ImagePath != obj.ImagePath) result.ImagePath = obj.ImagePath;
                 if (result.ServerLink != obj.ServerLink) result.ServerLink = obj.ServerLink;
+                if (result.GenreId !=obj.GenreId) result.GenreId = obj.GenreId;
 
                 await _repository.Update(result);
                 return Ok(obj);
@@ -117,7 +125,7 @@ namespace ProiectLicenta.Controllers
             return BadRequest("Item doesn't exist");
         }
         [HttpPost("addMessage")]
-        //[Authorize()]
+        [Authorize()]
         public async Task<IActionResult> AddMessage(MessageCreateDTO message)
         {
             var song = await _repository.GetSongWithIncludes(message.SongId);
@@ -137,7 +145,7 @@ namespace ProiectLicenta.Controllers
             return BadRequest("Wrong song id");
         }
         [HttpDelete("removeMessage/{songId}/{id}")]
-        //[Authorize()]
+        [Authorize()]
         public async Task<IActionResult> DeleteMessage(int songId,int id)
         {
             var song = await _repository.GetSongWithIncludes(songId);

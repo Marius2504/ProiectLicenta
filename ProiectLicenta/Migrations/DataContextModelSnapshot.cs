@@ -532,7 +532,7 @@ namespace ProiectLicenta.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
-                    b.Property<int>("GenreId")
+                    b.Property<int?>("GenreId")
                         .HasColumnType("int");
 
                     b.Property<string>("ImagePath")
@@ -773,9 +773,7 @@ namespace ProiectLicenta.Migrations
 
                     b.HasOne("ProiectLicenta.Entities.Genre", "Genre")
                         .WithMany("Songs")
-                        .HasForeignKey("GenreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GenreId");
 
                     b.HasOne("ProiectLicenta.Entities.Playlist", null)
                         .WithMany("Songs")

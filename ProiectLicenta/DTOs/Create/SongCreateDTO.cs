@@ -11,7 +11,7 @@ namespace ProiectLicenta.DTOs.Create
         public string ImagePath { get; set; }
         public int ArtistId { get; set; }
         public int? AlbumId { get; set; }
-        public int GenreId { get; set; }
+        public int? GenreId { get; set; }
         public int likes { get; set; }
         public List<Message>? Messages { get; set; }
     }

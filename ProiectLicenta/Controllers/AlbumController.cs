@@ -38,7 +38,7 @@ namespace ProiectLicenta.Controllers
         }
 
         [HttpPost]
-        //[Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
+        [Authorize(Roles = UserRoles.Artist + "," + UserRoles.Admin)]
         public virtual async Task<IActionResult> Create(AlbumCreateDTO obj)
         {
             Album createAlbum = new Album();

@@ -39,7 +39,11 @@ namespace ProiectLicenta.Controllers
         public virtual async Task<IActionResult> GetById(int id)
         {
             var obj = await _genericRepository.Get(id);
-            return Ok(obj);
+            if (obj != null)
+            {
+                return Ok(obj);
+            }
+            return BadRequest("Object doesn't exist");
         }
         
 

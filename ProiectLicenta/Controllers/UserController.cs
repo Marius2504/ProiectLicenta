@@ -78,7 +78,9 @@ namespace ProiectLicenta.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginUser user)
         {
+
             var currentUser = await _userManager.FindByEmailAsync(user.Email);
+            
             if (currentUser != null && await _userManager.CheckPasswordAsync(currentUser, user.Password))
             {
                 var roles = await _userManager.GetRolesAsync(currentUser);
@@ -165,7 +167,7 @@ namespace ProiectLicenta.Controllers
             }
             var code = await _userService.GetConfirmationEmail(currentUser.Id);
             var link = Url.Action("VerifyEmail", "User", new { id = currentUser.Id, code }, "https", "localhost:7255");
-            await _email.Send(currentUser.Email, "Email verification", $"<a href=\"{link}\">Verify Email</a>");
+            await _email.Send(currentUser.Email, "Email verification", $"Welcome to REMIX apllication <br><br> This e-mail is auto-generated and represents the verification of identity <a href=\"{link}\">Verify your e-mail</a>");
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
 
@@ -184,7 +186,7 @@ namespace ProiectLicenta.Controllers
             return BadRequest("The user no longer exists");
         }
         [HttpGet("all")]
-       // [Authorize(Roles = UserRoles.Admin)]
+        [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> GetAll()
         {
             var list = await _userService.GetAll();
@@ -257,7 +259,7 @@ namespace ProiectLicenta.Controllers
         [HttpGet]
         public async Task<IActionResult> VerifyEmail(string id, string code)
         {
-            var user = await _userService.GetById(id);
+            var user = await _userService.GetUserWithInclude(id);
             if (user == null)
             {
                 return BadRequest();
@@ -265,6 +267,8 @@ namespace ProiectLicenta.Controllers
             var result = await _userService.GetConfirmationEmail(id, code);
             if (result)
             {
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
                 return Ok();
             }
             return BadRequest();
