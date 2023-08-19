@@ -103,6 +103,7 @@ namespace ProiectLicenta.Controllers
                 if (result.ImagePath != obj.ImagePath) result.ImagePath = obj.ImagePath;
                 if (result.ServerLink != obj.ServerLink) result.ServerLink = obj.ServerLink;
                 if (result.GenreId !=obj.GenreId) result.GenreId = obj.GenreId;
+                if (result.AlbumId != obj.AlbumId) result.AlbumId = obj.AlbumId;
 
                 await _repository.Update(result);
                 return Ok(obj);

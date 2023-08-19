@@ -59,13 +59,29 @@ namespace ProiectLicenta.Controllers
                 if (section == "songFile")
                 {
                     folderName = Path.Combine("Resources", "Songs");
+
+                    var validExtensions = new[] { ".mp3", ".wav" }; // Extensiile valide pentru fișierele audio
+
+                    var fileExtension = Path.GetExtension(file.FileName).ToLower();
+                    if (!validExtensions.Contains(fileExtension))
+                    {
+                        return BadRequest("Wrong format song");
+                    }
                 }
                 else
                 {
                     folderName = Path.Combine("Resources", "Images");
                     folderName = Path.Combine(folderName, section);
+
+                    var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" }; // Extensiile valide pentru fișierele de imagine
+
+                    var fileExtension = Path.GetExtension(file.FileName).ToLower();
+                    if (!validExtensions.Contains(fileExtension))
+                    {
+                        return BadRequest("Wrong format image");
+                    }
                 }
-                
+
                 var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
                 if (file.Length > 0)
                 {
@@ -75,6 +91,12 @@ namespace ProiectLicenta.Controllers
                     var fileName = $"{userId}{fileExtension}";
                     var fullPath = Path.Combine(pathToSave, fileName);
                     var dbPath = Path.Combine(folderName, fileName);
+
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                    }
+
                     using (var stream = new FileStream(fullPath, FileMode.Create))
                     {
                         file.CopyTo(stream);

@@ -154,7 +154,7 @@ namespace ProiectLicenta.Controllers
             {
                 if (await _roleManager.RoleExistsAsync(UserRoles.Client))
                 {
-                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Client);
+                    await _userManager.AddToRoleAsync(currentUser, UserRoles.Admin);
                     Client client = new Client();
                     client.Name = user.UserName;
                     client.Email = user.Email;
